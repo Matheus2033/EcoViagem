@@ -16,7 +16,7 @@ export function loadGoogleMaps(): Promise<any> {
 
   carregando = new Promise((resolve, reject) => {
     const s = document.createElement('script');
-    s.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(MAPS_KEY)}&language=pt-BR&region=BR`;
+    s.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(MAPS_KEY)}&libraries=places&language=pt-BR&region=BR`;
     s.async = true;
     s.defer = true;
     s.onload = () => resolve((window as any).google);
@@ -30,6 +30,45 @@ export function loadGoogleMaps(): Promise<any> {
 }
 
 export interface Coord { lat: number; lng: number; }
+
+export interface Sugestao { id: string; descricao: string; }
+
+/** Autocomplete de lugares do Google (qualquer endereço/cidade). Vazio sem chave. */
+export async function buscarSugestoes(input: string): Promise<Sugestao[]> {
+  if (!hasMaps() || input.trim().length < 3) return [];
+  try {
+    const google = await loadGoogleMaps();
+    const svc = new google.maps.places.AutocompleteService();
+    return await new Promise((resolve) => {
+      svc.getPlacePredictions(
+        { input, componentRestrictions: { country: 'br' } },
+        (preds: any, status: string) => {
+          if (status !== 'OK' || !preds) return resolve([]);
+          resolve(preds.map((p: any) => ({ id: p.place_id, descricao: p.description })));
+        },
+      );
+    });
+  } catch {
+    return [];
+  }
+}
+
+/** Resolve as coordenadas de um place_id do Google. */
+export async function coordsDoPlace(placeId: string): Promise<Coord | null> {
+  if (!hasMaps()) return null;
+  try {
+    const google = await loadGoogleMaps();
+    const svc = new google.maps.places.PlacesService(document.createElement('div'));
+    return await new Promise((resolve) => {
+      svc.getDetails({ placeId, fields: ['geometry'] }, (place: any, status: string) => {
+        if (status !== 'OK' || !place?.geometry?.location) return resolve(null);
+        resolve({ lat: place.geometry.location.lat(), lng: place.geometry.location.lng() });
+      });
+    });
+  } catch {
+    return null;
+  }
+}
 
 /** Distância em linha reta (km) entre duas coordenadas — fórmula de haversine. */
 export function haversineKm(a: Coord, b: Coord): number {
