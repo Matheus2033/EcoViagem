@@ -80,7 +80,8 @@ ecoviagem/
 
 ## ▶️ Como executar
 
-> 🌐 **Colocar online (VPS Oracle):** veja o passo a passo completo em [`DEPLOY.md`](DEPLOY.md).
+> 🌐 **Colocar online:** stack completa em uma VPS Oracle → [`DEPLOY.md`](DEPLOY.md);
+> frontend na Vercel (backend à parte) → [`VERCEL.md`](VERCEL.md).
 
 ### Opção A — Tudo em um comando (só precisa de Docker) ⭐
 

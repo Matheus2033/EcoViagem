@@ -6,7 +6,11 @@ import type {
 // Reexporta os tipos para quem importa só de '../api' (conveniência).
 export type { Destino, DestinoDetalhe, Indicadores, TipoTransporte, Usuario, Viagem };
 
-const BASE = '/api';
+// Base da API.
+// - Local / VPS: o nginx faz proxy de /api → backend (deixe VITE_API_URL vazio).
+// - Frontend separado (ex.: Vercel): defina VITE_API_URL com a URL pública do
+//   backend, incluindo /api (ex.: https://api.seu-host.com/api).
+const BASE = ((import.meta as any).env?.VITE_API_URL || '/api').replace(/\/+$/, '');
 
 /** Resposta do passo 1 do login/cadastro (2FA disparado). */
 export interface InicioAuth {
