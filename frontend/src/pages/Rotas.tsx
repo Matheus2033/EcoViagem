@@ -6,7 +6,8 @@ import { Card, PageTitle, Loader, ErroBox, Page } from '../components';
 import { fadeUp } from '../lib/motion';
 import { useAsync } from '../hooks/useAsync';
 import {
-  hasMaps, loadGoogleMaps, haversineKm, buscarSugestoes, coordsDoPlace, type Coord,
+  hasMaps, loadGoogleMaps, haversineKm, buscarSugestoes, coordsDoPlace,
+  buscarSugestoesOSM, rotaRodoviariaKm, type Coord, type SugestaoGeo,
 } from '../lib/maps';
 import { CIDADES_BR } from '../lib/placesBR';
 
@@ -18,7 +19,7 @@ const iconeDe = (n: string) => ICONE[n.trim().toLowerCase()] ?? '🚏';
 const corFator = (f: number) => (f <= 0 ? '#059669' : f < 0.07 ? '#65a30d' : f < 0.15 ? '#d97706' : '#dc2626');
 const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
-interface Place { nome: string; sub?: string; lat: number; lng: number; tipo: 'destino' | 'cidade' | 'google'; }
+interface Place { nome: string; sub?: string; lat: number; lng: number; tipo: 'destino' | 'cidade' | 'google' | 'osm'; }
 
 export default function Rotas() {
   const { data, loading, erro } = useAsync(async () => {
@@ -29,7 +30,7 @@ export default function Rotas() {
   const [origem, setOrigem] = useState<Place | null>(null);
   const [destino, setDestino] = useState<Place | null>(null);
   const [distancia, setDistancia] = useState<number | null>(null);
-  const [fonte, setFonte] = useState<'google' | 'reta'>('reta');
+  const [fonte, setFonte] = useState<'google' | 'osrm' | 'reta'>('reta');
   const [calc, setCalc] = useState(false);
   const [avisoMapa, setAvisoMapa] = useState('');
 
@@ -64,7 +65,21 @@ export default function Rotas() {
     const reta = () => { if (!cancelado) { setDistancia(haversineKm(a, b)); setFonte('reta'); } };
 
     setCalc(true); setAvisoMapa('');
-    if (!hasMaps()) { reta(); setCalc(false); return; }
+
+    // Sem chave do Google: calcula a distância rodoviária REAL via OSRM (grátis);
+    // se não houver rota por estrada (ilha/travessia aérea), cai para linha reta.
+    if (!hasMaps()) {
+      rotaRodoviariaKm(a, b).then((km) => {
+        if (cancelado) return;
+        if (km != null) { setDistancia(km); setFonte('osrm'); }
+        else {
+          setAvisoMapa('Sem rota rodoviária para este trecho (ex.: ilha/travessia aérea). Usando distância em linha reta.');
+          reta();
+        }
+        setCalc(false);
+      });
+      return () => { cancelado = true; };
+    }
 
     loadGoogleMaps()
       .then((google) => {
@@ -114,8 +129,9 @@ export default function Rotas() {
         </div>
         {!hasMaps() && (
           <p className="text-xs text-gray-400 mt-3">
-            Dica: escolha entre destinos e cidades da lista. Com a chave do Google Maps configurada,
-            o campo busca <strong>qualquer endereço</strong> e traça a rota real no mapa.
+            Digite <strong>qualquer endereço</strong> (ex.: "Higienópolis 1588, São Paulo") — a busca usa o
+            OpenStreetMap e a distância é a <strong>rota real por estrada</strong> (OSRM), sem precisar de chave.
+            Com a chave do Google Maps, o mapa interativo também é exibido.
           </p>
         )}
       </Card>
@@ -127,7 +143,7 @@ export default function Rotas() {
             {distancia != null && (
               <span className="text-sm font-bold text-emerald-700">
                 {distancia.toLocaleString('pt-BR', { maximumFractionDigits: 0 })} km
-                <span className="ml-1 text-[11px] font-normal text-gray-400">{fonte === 'google' ? '(rota real)' : '(linha reta)'}</span>
+                <span className="ml-1 text-[11px] font-normal text-gray-400">{fonte === 'reta' ? '(linha reta)' : '(rota real)'}</span>
               </span>
             )}
           </div>
@@ -167,6 +183,7 @@ function PlaceCombo({
   const [q, setQ] = useState('');
   const [aberto, setAberto] = useState(false);
   const [gpreds, setGpreds] = useState<{ id: string; descricao: string }[]>([]);
+  const [osmPreds, setOsmPreds] = useState<SugestaoGeo[]>([]);
   const timer = useRef<any>(null);
 
   // Sincroniza o texto com o valor selecionado externamente.
@@ -181,18 +198,27 @@ function PlaceCombo({
   function aoDigitar(v: string) {
     setQ(v); setAberto(true);
     if (timer.current) clearTimeout(timer.current);
-    if (hasMaps() && v.trim().length >= 3) {
-      timer.current = setTimeout(async () => setGpreds(await buscarSugestoes(v)), 250);
+    if (v.trim().length >= 3) {
+      if (hasMaps()) {
+        timer.current = setTimeout(async () => { setGpreds(await buscarSugestoes(v)); setOsmPreds([]); }, 250);
+      } else {
+        // Sem chave do Google: autocomplete de endereços reais via OpenStreetMap.
+        timer.current = setTimeout(async () => { setOsmPreds(await buscarSugestoesOSM(v)); setGpreds([]); }, 350);
+      }
     } else {
-      setGpreds([]);
+      setGpreds([]); setOsmPreds([]);
     }
   }
 
-  function escolherLocal(l: Place) { onSelect(l); setQ(l.nome); setAberto(false); setGpreds([]); }
+  function escolherLocal(l: Place) { onSelect(l); setQ(l.nome); setAberto(false); setGpreds([]); setOsmPreds([]); }
   async function escolherGoogle(p: { id: string; descricao: string }) {
     const c = await coordsDoPlace(p.id);
     if (c) { onSelect({ nome: p.descricao, lat: c.lat, lng: c.lng, tipo: 'google' }); setQ(p.descricao); }
     setAberto(false); setGpreds([]);
+  }
+  function escolherOSM(p: SugestaoGeo) {
+    onSelect({ nome: p.descricao, lat: p.lat, lng: p.lng, tipo: 'osm' });
+    setQ(p.descricao); setAberto(false); setOsmPreds([]);
   }
 
   return (
@@ -209,7 +235,7 @@ function PlaceCombo({
         className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
       />
       <AnimatePresence>
-        {aberto && (locaisFiltrados.length > 0 || gpreds.length > 0) && (
+        {aberto && (locaisFiltrados.length > 0 || gpreds.length > 0 || osmPreds.length > 0) && (
           <motion.ul
             initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.15 }}
@@ -234,6 +260,17 @@ function PlaceCombo({
                 className="px-3 py-2 hover:bg-emerald-50 cursor-pointer flex items-center gap-2 text-sm"
               >
                 <span>📌</span><span className="text-gray-800">{p.descricao}</span>
+              </li>
+            ))}
+            {osmPreds.length > 0 && (
+              <li className="px-3 pt-2 pb-1 text-[10px] uppercase tracking-wide text-gray-400">Endereços (OpenStreetMap)</li>
+            )}
+            {osmPreds.map((p, i) => (
+              <li key={`osm${i}`}
+                onMouseDown={(e) => { e.preventDefault(); escolherOSM(p); }}
+                className="px-3 py-2 hover:bg-emerald-50 cursor-pointer flex items-center gap-2 text-sm"
+              >
+                <span>📌</span><span className="text-gray-800 line-clamp-1">{p.descricao}</span>
               </li>
             ))}
           </motion.ul>
@@ -314,9 +351,9 @@ function MapaPlaceholder({ origem, destino }: { origem: Place | null; destino: P
       <div className="text-4xl mb-2 animate-float">🗺️</div>
       <p className="text-sm font-semibold text-gray-700">{origem?.nome} → {destino?.nome}</p>
       <p className="text-xs text-gray-500 mt-2 max-w-xs">
-        O mapa interativo do Google aparece aqui ao configurar a chave
+        A distância já é a <strong>rota real por estrada</strong> (via OSRM). O mapa interativo do Google
+        aparece aqui ao configurar a chave
         <code className="mx-1 px-1 py-0.5 rounded bg-emerald-100 text-emerald-800">VITE_GOOGLE_MAPS_API_KEY</code>.
-        Por ora, a distância é estimada em linha reta.
       </p>
     </div>
   );

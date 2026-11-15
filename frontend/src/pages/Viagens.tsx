@@ -4,6 +4,7 @@ import { api, Viagem, Destino, TipoTransporte } from '../api';
 import { useAuth } from '../context/auth';
 import { Card, PageTitle, Loader, ErroBox, StatusBadge, Page } from '../components';
 import { fadeUp, stagger } from '../lib/motion';
+import { buscarSugestoesOSM, rotaRodoviariaKm, haversineKm } from '../lib/maps';
 
 interface TrechoForm { id_tipo_transporte: number; origem: string; destino: string; km: number; }
 
@@ -100,8 +101,29 @@ function NovaViagem({ destinos, tipos, onCriada }: { destinos: Destino[]; tipos:
   const [trechos, setTrechos] = useState<TrechoForm[]>([]);
   const [erro, setErro] = useState('');
   const [enviando, setEnviando] = useState(false);
+  const [calcKm, setCalcKm] = useState<number | null>(null); // índice do trecho em cálculo
 
   const fator = (id: number) => Number(tipos.find((t) => t.id_tipo_transporte === id)?.fator_emissao_co2_km ?? 0);
+
+  // Calcula a distância REAL do trecho (OpenStreetMap + OSRM) a partir dos textos
+  // de origem/destino — grátis, sem precisar de chave do Google Maps.
+  async function calcularKm(i: number) {
+    const t = trechos[i];
+    if (!t.origem.trim() || !t.destino.trim()) { setErro('Preencha origem e destino do trecho para calcular a distância.'); return; }
+    setErro(''); setCalcKm(i);
+    try {
+      const [o] = await buscarSugestoesOSM(t.origem);
+      const [d] = await buscarSugestoesOSM(t.destino);
+      if (!o || !d) { setErro('Não localizei origem e/ou destino. Tente nomes mais específicos (cidade, estado).'); return; }
+      const rodo = await rotaRodoviariaKm({ lat: o.lat, lng: o.lng }, { lat: d.lat, lng: d.lng });
+      const km = rodo ?? haversineKm({ lat: o.lat, lng: o.lng }, { lat: d.lat, lng: d.lng });
+      setTrecho(i, 'km', Math.round(km * 10) / 10);
+    } catch (e: any) {
+      setErro(e.message);
+    } finally {
+      setCalcKm(null);
+    }
+  }
 
   // Estimativa de CO2 no cliente (a trigger do banco é a fonte oficial)
   const estimativa = trechos.reduce(
@@ -182,16 +204,24 @@ function NovaViagem({ destinos, tipos, onCriada }: { destinos: Destino[]; tipos:
                   className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm bg-white">
                   {tipos.map((tp) => <option key={tp.id_tipo_transporte} value={tp.id_tipo_transporte}>{tp.nome}</option>)}
                 </select>
-                <input placeholder="Origem" value={t.origem} onChange={(e) => setTrecho(i, 'origem', e.target.value)}
+                <input placeholder="Origem (cidade ou endereço)" value={t.origem} onChange={(e) => setTrecho(i, 'origem', e.target.value)}
                   className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm" />
-                <input placeholder="Destino" value={t.destino} onChange={(e) => setTrecho(i, 'destino', e.target.value)}
+                <input placeholder="Destino (cidade ou endereço)" value={t.destino} onChange={(e) => setTrecho(i, 'destino', e.target.value)}
                   className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm" />
-                <input type="number" placeholder="km" value={t.km || ''} onChange={(e) => setTrecho(i, 'km', e.target.value)}
-                  className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm" />
+                <div className="flex gap-1">
+                  <input type="number" placeholder="km" value={t.km || ''} onChange={(e) => setTrecho(i, 'km', e.target.value)}
+                    className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm w-full min-w-0" />
+                  <button type="button" onClick={() => calcularKm(i)} disabled={calcKm === i}
+                    title="Calcular a distância real por estrada (OpenStreetMap/OSRM)"
+                    className="shrink-0 px-2 rounded-lg border border-emerald-300 text-emerald-700 text-xs hover:bg-emerald-50 disabled:opacity-60">
+                    {calcKm === i ? '…' : '🧭 km'}
+                  </button>
+                </div>
               </motion.div>
             ))}
           </AnimatePresence>
           {trechos.length === 0 && <p className="text-xs text-gray-400">Adicione trechos para estimar a pegada de carbono.</p>}
+          {trechos.length > 0 && <p className="text-xs text-gray-400 mb-1">Dica: preencha origem e destino e clique em <strong>🧭 km</strong> para calcular a distância real por estrada.</p>}
           {trechos.length > 0 && (
             <motion.p layout className="text-sm mt-2">
               Estimativa de emissão:{' '}

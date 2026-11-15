@@ -81,3 +81,56 @@ export function haversineKm(a: Coord, b: Coord): number {
     Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLng / 2) ** 2;
   return 2 * R * Math.asin(Math.sqrt(s));
 }
+
+/* ---------------------------------------------------------------------------
+ * Alternativa GRATUITA ao Google Maps (não precisa de chave nem billing):
+ * - Geocodificação de endereços reais via OpenStreetMap / Nominatim.
+ * - Distância rodoviária real via OSRM (router.project-osrm.org).
+ * Usadas quando VITE_GOOGLE_MAPS_API_KEY não está configurada, para que o app
+ * ainda aceite endereços específicos (ex.: "Higienópolis 1588") e calcule a
+ * distância de verdade, em vez de só linha reta.
+ * ------------------------------------------------------------------------- */
+
+export interface SugestaoGeo { descricao: string; lat: number; lng: number; }
+
+/**
+ * Autocomplete de endereços reais via OpenStreetMap/Nominatim (grátis, sem chave).
+ * Já retorna as coordenadas junto, dispensando uma segunda consulta.
+ */
+export async function buscarSugestoesOSM(input: string): Promise<SugestaoGeo[]> {
+  const q = input.trim();
+  if (q.length < 3) return [];
+  try {
+    const url =
+      'https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=0&limit=6&countrycodes=br&q=' +
+      encodeURIComponent(q);
+    const res = await fetch(url, { headers: { Accept: 'application/json' } });
+    if (!res.ok) return [];
+    const arr = await res.json();
+    return (Array.isArray(arr) ? arr : [])
+      .map((n: any) => ({ descricao: String(n.display_name ?? ''), lat: Number(n.lat), lng: Number(n.lon) }))
+      .filter((s: SugestaoGeo) => Number.isFinite(s.lat) && Number.isFinite(s.lng));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Distância rodoviária real (km) entre dois pontos via OSRM (grátis, sem chave).
+ * Retorna null quando não há rota por estrada (ex.: ilha, travessia aérea).
+ */
+export async function rotaRodoviariaKm(a: Coord, b: Coord): Promise<number | null> {
+  try {
+    const url =
+      `https://router.project-osrm.org/route/v1/driving/${a.lng},${a.lat};${b.lng},${b.lat}` +
+      '?overview=false&alternatives=false';
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data?.code !== 'Ok' || !Array.isArray(data.routes) || data.routes.length === 0) return null;
+    const metros = data.routes[0]?.distance;
+    return typeof metros === 'number' && metros >= 0 ? metros / 1000 : null;
+  } catch {
+    return null;
+  }
+}
