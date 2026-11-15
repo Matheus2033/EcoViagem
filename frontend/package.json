@@ -26,10 +26,15 @@
     "vite": "^5.4.2"
   },
   "browserslist": [
-    "Edge >= 90",
-    "Chrome >= 88",
-    "Firefox >= 90",
-    "Safari >= 14",
-    "not dead"
+    "> 0.3%",
+    "last 4 versions",
+    "Firefox ESR",
+    "Chrome >= 80",
+    "Edge >= 88",
+    "Firefox >= 78",
+    "Safari >= 12",
+    "iOS >= 12",
+    "not dead",
+    "not op_mini all"
   ]
 }

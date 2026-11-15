@@ -6,6 +6,11 @@ import react from '@vitejs/plugin-react';
 // Em dev, o frontend (5173) chama a API Spring Boot (8080) via proxy em /api.
 export default defineConfig({
   plugins: [react()],
+  build: {
+    // Transpila o JS para rodar em navegadores mais antigos também (além dos
+    // atuais de Chrome, Edge, Firefox, Safari e Brave).
+    target: ['chrome87', 'edge88', 'firefox78', 'safari13'],
+  },
   server: {
     port: 5173,
     proxy: {
