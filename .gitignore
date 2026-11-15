@@ -1,0 +1,22 @@
+# Dependências
+node_modules/
+
+# Build
+dist/
+frontend/dist/
+target/
+backend-springboot/target/
+*.class
+
+# Ambiente
+.env
+*.local
+
+# Backups e logs
+database/backup/dumps/
+*.log
+
+# Editor / SO
+.DS_Store
+.vscode/
+.idea/

@@ -1,0 +1,38 @@
+spring:
+  application:
+    name: ecoviagem-api
+  jackson:
+    # O frontend envia/recebe JSON em snake_case (id_usuario, data_inicio...),
+    # então mapeamos para os campos camelCase dos nossos records.
+    property-naming-strategy: SNAKE_CASE
+    default-property-inclusion: non_null
+  datasource:
+    # A API conecta como usuário de aplicação (menor privilégio) no MySQL.
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:ecoviagem}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=utf8
+    username: ${DB_USER:app_api}
+    password: ${DB_PASSWORD:app_api_senha}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # Envio de e-mail (2FA e recuperação de senha). Preencha via variáveis de
+  # ambiente para usar um SMTP real; sem isso, a API opera em modo demonstração.
+  mail:
+    host: ${MAIL_HOST:}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+
+# Liga o envio real de e-mail (true) ou mantém o modo demonstração (false).
+app:
+  mail:
+    enabled: ${MAIL_ENABLED:false}
+    from: ${MAIL_FROM:EcoViagem <no-reply@ecoviagem.local>}
+
+server:
+  port: ${PORT:8080}
+
+logging:
+  level:
+    org.springframework.jdbc.core: info
