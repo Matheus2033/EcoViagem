@@ -80,6 +80,8 @@ ecoviagem/
 
 ## ▶️ Como executar
 
+> 🌐 **Colocar online (VPS Oracle):** veja o passo a passo completo em [`DEPLOY.md`](DEPLOY.md).
+
 ### Opção A — Tudo em um comando (só precisa de Docker) ⭐
 
 Sobe banco + API (Java) + frontend (React) juntos:
