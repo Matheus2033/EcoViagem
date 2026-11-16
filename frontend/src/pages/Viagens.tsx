@@ -31,34 +31,54 @@ export default function Viagens() {
     /* eslint-disable-next-line */
   }, []);
 
+  // Com o modal aberto: trava a rolagem do fundo e permite fechar com Esc.
+  useEffect(() => {
+    if (!abrirForm) return;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setAbrirForm(false); };
+    window.addEventListener('keydown', onKey);
+    return () => { document.body.style.overflow = ''; window.removeEventListener('keydown', onKey); };
+  }, [abrirForm]);
+
   return (
     <Page>
       <div className="flex justify-between items-center mb-6 gap-3">
         <PageTitle title="Minhas Viagens" subtitle="Acompanhe suas viagens e a pegada de carbono de cada uma" />
         <motion.button
           whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.96 }}
-          onClick={() => setAbrirForm(!abrirForm)}
+          onClick={() => setAbrirForm(true)}
           className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap shadow-sm transition"
         >
-          {abrirForm ? 'Fechar' : '+ Nova viagem'}
+          + Nova viagem
         </motion.button>
       </div>
 
-      <AnimatePresence initial={false}>
+      {/* Modal de nova viagem */}
+      <AnimatePresence>
         {abrirForm && (
           <motion.div
-            key="form"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-            className="overflow-hidden"
+            key="overlay"
+            className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 backdrop-blur-sm p-4 sm:p-6"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onMouseDown={() => setAbrirForm(false)}
+            role="dialog" aria-modal="true"
           >
-            <NovaViagem
-              destinos={destinos}
-              tipos={tipos}
-              onCriada={() => { setAbrirForm(false); carregar(); }}
-            />
+            <motion.div
+              className="w-full max-w-2xl my-4"
+              initial={{ opacity: 0, y: 24, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 24, scale: 0.98 }}
+              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+              onMouseDown={(e) => e.stopPropagation()}
+            >
+              <NovaViagem
+                destinos={destinos}
+                tipos={tipos}
+                onFechar={() => setAbrirForm(false)}
+                onCriada={() => { setAbrirForm(false); carregar(); }}
+              />
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -95,7 +115,7 @@ export default function Viagens() {
   );
 }
 
-function NovaViagem({ destinos, tipos, onCriada }: { destinos: Destino[]; tipos: TipoTransporte[]; onCriada: () => void }) {
+function NovaViagem({ destinos, tipos, onCriada, onFechar }: { destinos: Destino[]; tipos: TipoTransporte[]; onCriada: () => void; onFechar: () => void }) {
   const { usuario } = useAuth();
   const [form, setForm] = useState({ id_destino: '', data_inicio: '', data_fim: '', num_pessoas: 1 });
   const [trechos, setTrechos] = useState<TrechoForm[]>([]);
@@ -140,6 +160,7 @@ function NovaViagem({ destinos, tipos, onCriada }: { destinos: Destino[]; tipos:
 
   async function enviar(e: React.FormEvent) {
     e.preventDefault();
+    if (!form.id_destino) { setErro('Escolha um destino para a viagem.'); return; }
     setErro(''); setEnviando(true);
     try {
       await api.criarViagem({
@@ -159,19 +180,43 @@ function NovaViagem({ destinos, tipos, onCriada }: { destinos: Destino[]; tipos:
   }
 
   return (
-    <Card className="p-5 mb-6 border-emerald-200">
-      <h3 className="font-semibold text-gray-800 mb-4">Planejar nova viagem</h3>
+    <Card className="p-5 border-emerald-200 shadow-xl">
+      <div className="flex items-start justify-between mb-4">
+        <div>
+          <h3 className="font-semibold text-gray-800 text-lg">Planejar nova viagem</h3>
+          <p className="text-xs text-gray-500">Escolha o destino e os detalhes da sua viagem</p>
+        </div>
+        <button type="button" onClick={onFechar} aria-label="Fechar"
+          className="shrink-0 w-8 h-8 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 flex items-center justify-center text-xl leading-none transition">×</button>
+      </div>
       {erro && <ErroBox msg={erro} />}
       <form onSubmit={enviar} className="space-y-4">
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <label className="text-sm">
-            <span className="text-gray-600">Destino</span>
-            <select required value={form.id_destino} onChange={(e) => setForm({ ...form, id_destino: e.target.value })}
-              className="mt-1 w-full border border-gray-300 rounded-lg px-2 py-2">
-              <option value="">Selecione...</option>
-              {destinos.map((d) => <option key={d.id_destino} value={d.id_destino}>{d.nome}</option>)}
-            </select>
-          </label>
+        {/* Escolha do destino (cards) */}
+        <div>
+          <span className="text-sm text-gray-600">Para onde você vai? <span className="text-red-500">*</span></span>
+          <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {destinos.map((d) => {
+              const sel = String(d.id_destino) === form.id_destino;
+              return (
+                <button type="button" key={d.id_destino}
+                  onClick={() => setForm({ ...form, id_destino: String(d.id_destino) })}
+                  className={`text-left rounded-xl border p-3 transition ${sel ? 'border-emerald-500 bg-emerald-50 ring-1 ring-emerald-500' : 'border-gray-200 hover:border-emerald-300 hover:bg-gray-50'}`}
+                >
+                  <div className="text-sm font-semibold text-gray-800 flex items-center gap-1">
+                    <span>{sel ? '✅' : '🌿'}</span>
+                    <span className="line-clamp-1">{d.nome}</span>
+                  </div>
+                  <div className="text-xs text-gray-500 line-clamp-1">{d.cidade}/{d.estado}</div>
+                  {d.categoria && <div className="text-[11px] text-emerald-700 mt-0.5 line-clamp-1">{d.categoria}</div>}
+                </button>
+              );
+            })}
+          </div>
+          {destinos.length === 0 && <p className="text-xs text-gray-400 mt-2">Carregando destinos…</p>}
+        </div>
+
+        {/* Datas e pessoas */}
+        <div className="grid sm:grid-cols-3 gap-3">
           <label className="text-sm">
             <span className="text-gray-600">Início</span>
             <input type="date" required value={form.data_inicio} onChange={(e) => setForm({ ...form, data_inicio: e.target.value })}
@@ -232,10 +277,16 @@ function NovaViagem({ destinos, tipos, onCriada }: { destinos: Destino[]; tipos:
           )}
         </div>
 
-        <motion.button disabled={enviando} whileHover={{ scale: enviando ? 1 : 1.03 }} whileTap={{ scale: 0.96 }}
-          className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-xl text-sm font-medium disabled:opacity-60 transition">
-          {enviando ? 'Salvando...' : 'Registrar viagem'}
-        </motion.button>
+        <div className="flex justify-end gap-2 pt-1">
+          <button type="button" onClick={onFechar}
+            className="px-5 py-2 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-100 transition">
+            Cancelar
+          </button>
+          <motion.button disabled={enviando} whileHover={{ scale: enviando ? 1 : 1.03 }} whileTap={{ scale: 0.96 }}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-xl text-sm font-medium disabled:opacity-60 transition">
+            {enviando ? 'Salvando...' : 'Registrar viagem'}
+          </motion.button>
+        </div>
       </form>
     </Card>
   );
