@@ -124,16 +124,9 @@ export default function Rotas() {
 
       <Card className="p-5">
         <div className="grid sm:grid-cols-2 gap-4">
-          <PlaceCombo label="De onde você sai?" icone="📍" valor={origem} locais={locais} onSelect={setOrigem} placeholder="Ex.: São Paulo" />
-          <PlaceCombo label="Para onde quer ir?" icone="🏁" valor={destino} locais={locais} onSelect={setDestino} placeholder="Ex.: Fernando de Noronha" />
+          <PlaceCombo label="De onde você sai?" icone="📍" valor={origem} locais={locais} onSelect={setOrigem} placeholder="Digite uma cidade ou endereço" />
+          <PlaceCombo label="Para onde quer ir?" icone="🏁" valor={destino} locais={locais} onSelect={setDestino} placeholder="Digite o destino" />
         </div>
-        {!hasMaps() && (
-          <p className="text-xs text-gray-400 mt-3">
-            Digite <strong>qualquer endereço</strong> (ex.: "Higienópolis 1588, São Paulo") — a busca usa o
-            OpenStreetMap e a distância é a <strong>rota real por estrada</strong> (OSRM), sem precisar de chave.
-            Com a chave do Google Maps, o mapa interativo também é exibido.
-          </p>
-        )}
       </Card>
 
       <div className="grid lg:grid-cols-2 gap-4 mt-4">
@@ -348,13 +341,15 @@ function Recomendacao({ modos, distancia }: { modos: TipoTransporte[]; distancia
 function MapaPlaceholder({ origem, destino }: { origem: Place | null; destino: Place | null }) {
   return (
     <div className="w-full h-72 rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 flex flex-col items-center justify-center text-center p-6">
-      <div className="text-4xl mb-2 animate-float">🗺️</div>
-      <p className="text-sm font-semibold text-gray-700">{origem?.nome} → {destino?.nome}</p>
-      <p className="text-xs text-gray-500 mt-2 max-w-xs">
-        A distância já é a <strong>rota real por estrada</strong> (via OSRM). O mapa interativo do Google
-        aparece aqui ao configurar a chave
-        <code className="mx-1 px-1 py-0.5 rounded bg-emerald-100 text-emerald-800">VITE_GOOGLE_MAPS_API_KEY</code>.
+      <div className="flex items-center gap-3 text-3xl mb-3">
+        <span>📍</span>
+        <span className="text-emerald-300 tracking-widest text-lg">• • • •</span>
+        <span>🏁</span>
+      </div>
+      <p className="text-base font-semibold text-gray-800">
+        {origem?.nome ?? '—'} <span className="text-emerald-600">→</span> {destino?.nome ?? '—'}
       </p>
+      <p className="text-xs text-gray-400 mt-2">Trajeto da sua viagem</p>
     </div>
   );
 }
