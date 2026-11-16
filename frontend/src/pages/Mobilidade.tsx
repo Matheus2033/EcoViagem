@@ -196,12 +196,6 @@ function HeroBike({ economia, arvores }: { economia: number; arvores: number }) 
           <Mini valor={`${arv}`} unidade="árvores/ano" />
         </div>
       </div>
-
-      {/* pista com a bike andando */}
-      <div className="relative mt-5 h-8">
-        <div className="absolute left-0 right-0 top-1/2 border-t-2 border-dashed border-white/30" />
-        <div className="absolute inset-0 animate-ride text-2xl" aria-hidden>🚴</div>
-      </div>
     </motion.div>
   );
 }
