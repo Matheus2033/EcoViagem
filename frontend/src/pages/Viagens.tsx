@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api, Viagem, Destino, TipoTransporte } from '../api';
 import { useAuth } from '../context/auth';
@@ -53,35 +54,39 @@ export default function Viagens() {
         </motion.button>
       </div>
 
-      {/* Modal de nova viagem */}
-      <AnimatePresence>
-        {abrirForm && (
-          <motion.div
-            key="overlay"
-            className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 backdrop-blur-sm p-4 sm:p-6"
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            onMouseDown={() => setAbrirForm(false)}
-            role="dialog" aria-modal="true"
-          >
+      {/* Modal de nova viagem — via portal no body para não ficar preso a
+          contêineres com transform (o motion.div do Page), que quebram o fixed. */}
+      {createPortal(
+        <AnimatePresence>
+          {abrirForm && (
             <motion.div
-              className="w-full max-w-2xl my-4"
-              initial={{ opacity: 0, y: 24, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 24, scale: 0.98 }}
-              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-              onMouseDown={(e) => e.stopPropagation()}
+              key="overlay"
+              className="fixed inset-0 z-[60] flex items-start justify-center overflow-y-auto bg-black/40 backdrop-blur-sm p-4 sm:p-6"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onMouseDown={() => setAbrirForm(false)}
+              role="dialog" aria-modal="true"
             >
-              <NovaViagem
-                destinos={destinos}
-                tipos={tipos}
-                onFechar={() => setAbrirForm(false)}
-                onCriada={() => { setAbrirForm(false); carregar(); }}
-              />
+              <motion.div
+                className="w-full max-w-2xl my-4"
+                initial={{ opacity: 0, y: 24, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 24, scale: 0.98 }}
+                transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                onMouseDown={(e) => e.stopPropagation()}
+              >
+                <NovaViagem
+                  destinos={destinos}
+                  tipos={tipos}
+                  onFechar={() => setAbrirForm(false)}
+                  onCriada={() => { setAbrirForm(false); carregar(); }}
+                />
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>,
+        document.body,
+      )}
 
       {erro && <ErroBox msg={erro} />}
       {loading ? <Loader linhas={3} /> : (
