@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api, Viagem, Destino, TipoTransporte } from '../api';
 import { useAuth } from '../context/auth';
-import { Card, PageTitle, Loader, ErroBox, StatusBadge, Page } from '../components';
+import { PageTitle, Loader, ErroBox, StatusBadge, Page } from '../components';
 import { fadeUp, stagger } from '../lib/motion';
 import { buscarSugestoesOSM, rotaRodoviariaKm, haversineKm } from '../lib/maps';
 
@@ -185,7 +185,7 @@ function NovaViagem({ destinos, tipos, onCriada, onFechar }: { destinos: Destino
   }
 
   return (
-    <Card className="p-5 border-emerald-200 shadow-xl">
+    <div className="bg-white rounded-2xl border border-emerald-200 shadow-2xl p-5">
       <div className="flex items-start justify-between mb-4">
         <div>
           <h3 className="font-semibold text-gray-800 text-lg">Planejar nova viagem</h3>
@@ -293,7 +293,7 @@ function NovaViagem({ destinos, tipos, onCriada, onFechar }: { destinos: Destino
           </motion.button>
         </div>
       </form>
-    </Card>
+    </div>
   );
 }
 
