@@ -1,6 +1,8 @@
 // Cliente da API EcoViagem. Em dev, o Vite faz proxy de /api -> :8080.
 import type {
   Destino, DestinoDetalhe, Indicadores, TipoTransporte, Usuario, Viagem,
+  Recomendacoes, Noticias, Fato, Previsao, Ecossistema, AcaoSustentavel, Carteira,
+  Recompensa, Resgate, Saldo, OpcoesRota, RotaPayload,
 } from '../types';
 
 // Reexporta os tipos para quem importa só de '../api' (conveniência).
@@ -75,4 +77,41 @@ export const api = {
 
   // meta
   tiposTransporte: () => req<TipoTransporte[]>('/meta/tipos-transporte'),
+
+  // recomendações (página inicial)
+  recomendacoes: (idUsuario?: number, limite = 6) =>
+    req<Recomendacoes>('/recomendacoes' + query({
+      limite: String(limite), ...(idUsuario ? { usuario: String(idUsuario) } : {}),
+    })),
+
+  // dados reais e previsões
+  noticias: (tema = 'poluicao', limite = 12) =>
+    req<Noticias>('/impacto/noticias' + query({ tema, limite: String(limite) })),
+  fatos: () => req<Fato[]>('/impacto/fatos'),
+  previsoes: (cenario: string, variacao?: number) =>
+    req<Previsao>('/previsoes/extincao' + query(
+      variacao != null ? { variacao: String(variacao) } : { cenario },
+    )),
+  previsao: (id: number, cenario = 'atual') =>
+    req<Ecossistema & { comparativo_cenarios: Record<string, number | null> }>(
+      `/previsoes/extincao/${id}` + query({ cenario }),
+    ),
+
+  // opções de rota sustentável (tokens calculados no servidor)
+  rotaOpcoes: (body: RotaPayload) =>
+    req<OpcoesRota>('/rotas/opcoes', { method: 'POST', body: JSON.stringify(body) }),
+  rotaRegistrar: (body: RotaPayload) =>
+    req<{ tokens: number; co2_evitado_kg: number; modo: string; saldo: number; registradas_hoje: number }>(
+      '/rotas/registrar', { method: 'POST', body: JSON.stringify(body) }),
+
+  // EcoTokens
+  ecoAcoes: (idUsuario?: number) =>
+    req<AcaoSustentavel[]>('/eco/acoes' + query(idUsuario ? { usuario: String(idUsuario) } : undefined)),
+  ecoCarteira: (idUsuario: number) => req<Carteira>(`/eco/carteira?usuario=${idUsuario}`),
+  ecoRegistrar: (body: { id_usuario: number; id_acao: number; descricao?: string }) =>
+    req<Saldo>('/eco/registros', { method: 'POST', body: JSON.stringify(body) }),
+  ecoRecompensas: () => req<Recompensa[]>('/eco/recompensas'),
+  ecoResgatar: (body: { id_usuario: number; id_recompensa: number }) =>
+    req<Resgate>('/eco/resgates', { method: 'POST', body: JSON.stringify(body) }),
+  ecoRanking: () => req<{ nome: string; tokens_ganhos: number; qtd_acoes: number; co2_evitado_kg: number }[]>('/eco/ranking'),
 };

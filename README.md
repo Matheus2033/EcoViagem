@@ -197,6 +197,25 @@ reserva; se uma trigger abortar (ex.: superlotação), tudo sofre ROLLBACK.
 | POST | `/api/reservas` | cria uma reserva (valor calculado por trigger) |
 | POST | `/api/avaliacoes` | avalia um destino |
 | GET  | `/api/relatorios/*` | indicadores, sustentabilidade, transporte, ocupação |
+| GET  | `/api/recomendacoes?usuario=` | destinos recomendados (pontuação no SQL) + dicas personalizadas |
+| GET  | `/api/impacto/noticias?tema=` | notícias reais (Google Notícias RSS, cache 30 min): `poluicao`, `clima`, `oceanos`, `florestas`, `turismo` |
+| GET  | `/api/impacto/fatos` | indicadores com fonte (OMS, PNUMA, IPCC, MapBiomas…) |
+| GET  | `/api/previsoes/extincao?cenario=reducao\|atual\|agravado` ou `?variacao=-30` | previsão do ano de colapso de ecossistemas |
+| GET  | `/api/previsoes/extincao/:id` | previsão de um lugar + comparativo dos 3 cenários |
+| POST | `/api/previsoes/simular` | simulação livre `{saude_atual, taxa_degradacao, sensibilidade, variacao}` |
+| GET  | `/api/eco/acoes?usuario=` · `/api/eco/recompensas` · `/api/eco/ranking` | catálogo de práticas, recompensas e ranking |
+| GET  | `/api/eco/carteira?usuario=` | saldo, práticas relatadas e vouchers |
+| POST | `/api/eco/registros` · `/api/eco/resgates` | relatar prática (ganha tokens) · trocar tokens (gera voucher) |
+
+### EcoTokens e previsões no banco (script `08_eco_tokens_previsoes.sql`)
+- **Trigger `trg_registro_acao_ins`** → define os tokens da prática e barra relatos acima do limite diário.
+- **Trigger `trg_resgate_ins`** → valida saldo (`vw_saldo_tokens`) e estoque, registra o custo e baixa o estoque.
+- **View `vw_saldo_tokens`** → saldo = ganhos − gastos, nº de práticas e CO₂ evitado.
+- **Tabela `ecossistema_risco`** → parâmetros do modelo `S(t) = S0 × (1 − r·max(0, 1 + s·v)/100)^t`
+  (colapso funcional quando S < 25). Modelo educativo, para comparar cenários de poluição.
+
+> Banco já criado antes? Aplique o script manualmente:
+> `docker exec -i ecoviagem_db mysql -uroot -p<senha> ecoviagem < database/08_eco_tokens_previsoes.sql`
 
 ---
 

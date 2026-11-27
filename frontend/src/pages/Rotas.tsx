@@ -1,22 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../api';
-import type { TipoTransporte } from '../types';
 import { Card, PageTitle, Loader, ErroBox, Page } from '../components';
-import { fadeUp } from '../lib/motion';
+import { OpcoesRota } from '../components/OpcoesRota';
 import { useAsync } from '../hooks/useAsync';
 import {
   hasMaps, loadGoogleMaps, haversineKm, buscarSugestoes, coordsDoPlace,
-  buscarSugestoesOSM, rotaRodoviariaKm, type Coord, type SugestaoGeo,
+  buscarSugestoesOSM, rotaRodoviariaKm, rotaGoogle, linkGoogleMaps, MODOS_GOOGLE,
+  type Coord, type SugestaoGeo, type ModoGoogle, type RotaGoogle,
 } from '../lib/maps';
 import { CIDADES_BR } from '../lib/placesBR';
 
-const ICONE: Record<string, string> = {
-  'bicicleta': '🚲', 'a pé': '🚶', 'trem': '🚆', 'ônibus': '🚌',
-  'onibus': '🚌', 'van': '🚐', 'carro': '🚗', 'avião': '✈️', 'aviao': '✈️',
-};
-const iconeDe = (n: string) => ICONE[n.trim().toLowerCase()] ?? '🚏';
-const corFator = (f: number) => (f <= 0 ? '#059669' : f < 0.07 ? '#65a30d' : f < 0.15 ? '#d97706' : '#dc2626');
 const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
 interface Place { nome: string; sub?: string; lat: number; lng: number; tipo: 'destino' | 'cidade' | 'google' | 'osm'; }
@@ -33,6 +28,10 @@ export default function Rotas() {
   const [fonte, setFonte] = useState<'google' | 'osrm' | 'reta'>('reta');
   const [calc, setCalc] = useState(false);
   const [avisoMapa, setAvisoMapa] = useState('');
+  const [rotasG, setRotasG] = useState<Partial<Record<ModoGoogle, RotaGoogle | null>>>({});
+  const [modoMapa, setModoMapa] = useState<ModoGoogle>('DRIVING');
+  const [params] = useSearchParams();
+  const destinoParam = Number(params.get('destino')) || null;
 
   const mapDiv = useRef<HTMLDivElement>(null);
   const mapObj = useRef<any>(null);
@@ -46,11 +45,13 @@ export default function Rotas() {
     ...CIDADES_BR.map((c) => ({ nome: c.nome, sub: c.uf, lat: c.lat, lng: c.lng, tipo: 'cidade' as const })),
   ];
 
-  // Padrão: São Paulo → Fernando de Noronha (exemplo).
+  // Padrão: São Paulo → destino vindo da recomendação (?destino=id) ou Fernando de Noronha.
   useEffect(() => {
     if (!data || origem || destino) return;
     const sp = locais.find((l) => norm(l.nome) === 'sao paulo') ?? locais.find((l) => l.tipo === 'cidade');
-    const fn = locais.find((l) => norm(l.nome).includes('noronha')) ?? locais.find((l) => l.tipo === 'destino');
+    const escolhido = destinoParam ? data.destinos.find((d) => d.id_destino === destinoParam) : undefined;
+    const fn = (escolhido && locais.find((l) => l.tipo === 'destino' && l.nome === escolhido.nome))
+      ?? locais.find((l) => norm(l.nome).includes('noronha')) ?? locais.find((l) => l.tipo === 'destino');
     if (sp) setOrigem(sp);
     if (fn) setDestino(fn);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -81,28 +82,34 @@ export default function Rotas() {
       return () => { cancelado = true; };
     }
 
+    // Com chave: Google Maps real — rotas de carro, transporte público, bike e a pé.
+    setRotasG({});
     loadGoogleMaps()
-      .then((google) => {
+      .then(async (google) => {
         if (cancelado) return;
         if (!mapObj.current && mapDiv.current) {
           mapObj.current = new google.maps.Map(mapDiv.current, { center: a, zoom: 5, mapTypeControl: false, streetViewControl: false });
           renderer.current = new google.maps.DirectionsRenderer({ map: mapObj.current });
         }
-        new google.maps.DirectionsService().route(
-          { origin: a, destination: b, travelMode: google.maps.TravelMode.DRIVING },
-          (res: any, status: string) => {
-            if (cancelado) return;
-            if (status === 'OK' && res.routes[0]?.legs[0]) {
-              renderer.current?.setDirections(res);
-              setDistancia(res.routes[0].legs[0].distance.value / 1000);
-              setFonte('google');
-            } else {
-              setAvisoMapa('Sem rota rodoviária para este trecho (ex.: ilha/travessia). Usando distância em linha reta.');
-              reta();
-            }
-            setCalc(false);
-          },
-        );
+        const resultados = await Promise.all(MODOS_GOOGLE.map((m) => rotaGoogle(a, b, m.id).catch(() => null)));
+        if (cancelado) return;
+        const porModo: Partial<Record<ModoGoogle, RotaGoogle | null>> = {};
+        MODOS_GOOGLE.forEach((m, i) => { porModo[m.id] = resultados[i]; });
+        setRotasG(porModo);
+
+        const carro = porModo.DRIVING;
+        const primeira = carro ?? resultados.find((r) => r != null) ?? null;
+        if (primeira) {
+          setModoMapa(primeira.modo);
+          renderer.current?.setDirections(primeira.resultado);
+          setDistancia((carro ?? primeira).km);
+          setFonte('google');
+        } else {
+          renderer.current?.set('directions', null); // limpa a rota anterior do mapa
+          setAvisoMapa('O Google não encontrou rota terrestre (ex.: ilha/travessia aérea). Usando distância em linha reta.');
+          reta();
+        }
+        setCalc(false);
       })
       .catch((e) => { if (!cancelado) { setAvisoMapa(`${e.message}. Usando linha reta.`); reta(); setCalc(false); } });
 
@@ -113,13 +120,23 @@ export default function Rotas() {
   if (erro) return <Page><ErroBox msg={`Falha ao carregar: ${erro}`} /></Page>;
   if (loading || !data) return <Page><Loader linhas={4} /></Page>;
 
-  const modos = [...data.transportes].sort((a, b) => Number(a.fator_emissao_co2_km) - Number(b.fator_emissao_co2_km));
+  // Sem rota por estrada (ex.: ilha) → só opções aéreas; trechos curtos sempre são terrestres.
+  const terrestre = fonte !== 'reta'
+    || (origem != null && destino != null && haversineKm(origem, destino) <= 50);
+
+  function verNoMapa(modo: ModoGoogle) {
+    const r = rotasG[modo];
+    if (!r) return;
+    setModoMapa(modo);
+    renderer.current?.setDirections(r.resultado);
+    mapDiv.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
 
   return (
     <Page>
       <PageTitle
         title="Planejar Rota"
-        subtitle="Escolha de onde sai e para onde vai — veja a rota e o transporte com menos CO₂"
+        subtitle="Compare várias formas de fazer o trajeto, economize CO₂ e dinheiro e ganhe EcoTokens"
       />
 
       <Card className="p-5">
@@ -129,7 +146,7 @@ export default function Rotas() {
         </div>
       </Card>
 
-      <div className="grid lg:grid-cols-2 gap-4 mt-4">
+      <div className="mt-4">
         <Card className="p-5">
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-semibold text-gray-800">Rota</h3>
@@ -147,20 +164,46 @@ export default function Rotas() {
           )}
           {avisoMapa && <p className="text-xs text-amber-600 mt-2">{avisoMapa}</p>}
           {calc && <p className="text-xs text-gray-400 mt-2 animate-pulse">Calculando rota…</p>}
-        </Card>
 
-        <Card className="p-5">
-          <h3 className="font-semibold text-gray-800 mb-1">Emissão por transporte nesta rota</h3>
-          <p className="text-xs text-gray-400 mb-4">
-            CO₂ estimado por pessoa {distancia != null ? `em ${distancia.toLocaleString('pt-BR', { maximumFractionDigits: 0 })} km` : ''}.
-          </p>
-          {distancia == null
-            ? <p className="text-sm text-gray-400">Selecione origem e destino.</p>
-            : <Comparacao modos={modos} distancia={distancia} />}
+          {hasMaps() && Object.keys(rotasG).length > 0 && (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3">
+              {MODOS_GOOGLE.map((m) => {
+                const r = rotasG[m.id];
+                const ativo = modoMapa === m.id && !!r;
+                return (
+                  <button key={m.id} type="button" disabled={!r}
+                    onClick={() => { if (r) { setModoMapa(m.id); renderer.current?.setDirections(r.resultado); } }}
+                    className={`text-left rounded-xl px-3 py-2 ring-1 transition ${ativo ? 'ring-emerald-500 bg-emerald-50' : 'ring-gray-200 hover:bg-gray-50'} disabled:opacity-50`}>
+                    <p className="text-xs text-gray-500">{m.icone} {m.rotulo}</p>
+                    <p className="text-sm font-semibold text-gray-800">
+                      {r ? `${r.duracao} · ${r.km.toLocaleString('pt-BR', { maximumFractionDigits: 0 })} km` : 'sem rota'}
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {origem && destino && (
+            <a href={linkGoogleMaps({ lat: origem.lat, lng: origem.lng }, { lat: destino.lat, lng: destino.lng }, hasMaps() ? modoMapa : 'TRANSIT')}
+              target="_blank" rel="noopener noreferrer"
+              className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-emerald-700 hover:text-emerald-800">
+              🗺️ Abrir esta rota no Google Maps ↗
+            </a>
+          )}
         </Card>
       </div>
 
-      {distancia != null && <Recomendacao modos={modos} distancia={distancia} />}
+      {origem && destino && distancia != null && !calc && (
+        <OpcoesRota
+          origem={{ nome: origem.nome, lat: origem.lat, lng: origem.lng }}
+          destino={{ nome: destino.nome, lat: destino.lat, lng: destino.lng }}
+          distancia={fonte === 'reta' ? null : distancia}
+          terrestre={terrestre}
+          rotasGoogle={rotasG}
+          onVerNoMapa={verNoMapa}
+        />
+      )}
     </Page>
   );
 }
@@ -270,71 +313,6 @@ function PlaceCombo({
         )}
       </AnimatePresence>
     </div>
-  );
-}
-
-function Comparacao({ modos, distancia }: { modos: TipoTransporte[]; distancia: number }) {
-  const max = Math.max(...modos.map((m) => Number(m.fator_emissao_co2_km) * distancia), 1);
-  return (
-    <div className="space-y-2.5">
-      {modos.map((m, i) => {
-        const fator = Number(m.fator_emissao_co2_km);
-        const emissao = fator * distancia;
-        const zero = fator <= 0;
-        return (
-          <div key={m.id_tipo_transporte} className="flex items-center gap-3">
-            <span className="w-24 text-sm text-gray-700 flex items-center gap-1.5 shrink-0">
-              <span className="text-base">{iconeDe(m.nome)}</span>{m.nome}
-            </span>
-            <div className="flex-1 bg-gray-100 rounded-full h-3.5 overflow-hidden">
-              <motion.div
-                className="h-3.5 rounded-full" style={{ backgroundColor: corFator(fator) }}
-                initial={{ width: 0 }} animate={{ width: `${Math.max((emissao / max) * 100, zero ? 6 : 2)}%` }}
-                transition={{ duration: 0.7, delay: 0.04 * i, ease: [0.22, 1, 0.36, 1] }}
-              />
-            </div>
-            <span className={`w-24 text-right text-xs font-semibold ${zero ? 'text-emerald-600' : 'text-gray-500'}`}>
-              {zero ? '0 kg 🎉' : `${emissao.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} kg`}
-            </span>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function Recomendacao({ modos, distancia }: { modos: TipoTransporte[]; distancia: number }) {
-  const curta = distancia <= 15;
-  const viaveis = modos.filter((m) => {
-    const n = m.nome.toLowerCase();
-    if ((n === 'bicicleta' || n === 'a pé') && !curta) return false;
-    return true;
-  });
-  const melhor = viaveis[0] ?? modos[0];
-  const carro = modos.find((m) => m.nome.toLowerCase() === 'carro');
-  const economia = (Number(carro?.fator_emissao_co2_km ?? 0.192) - Number(melhor.fator_emissao_co2_km)) * distancia;
-
-  return (
-    <motion.div
-      variants={fadeUp}
-      className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-700 bg-200 animate-gradient-pan text-white p-6 mt-4 shadow-lg shadow-emerald-700/20"
-    >
-      <div className="absolute -top-10 -right-6 w-40 h-40 rounded-full bg-white/10 blur-2xl animate-float-slow" />
-      <div className="relative flex flex-col md:flex-row md:items-center gap-4">
-        <div className="text-5xl animate-sway shrink-0">{iconeDe(melhor.nome)}</div>
-        <div className="flex-1">
-          <p className="text-emerald-50/80 text-xs uppercase tracking-wide font-semibold">Opção mais limpa</p>
-          <h3 className="text-xl md:text-2xl font-extrabold">Vá de {melhor.nome}</h3>
-          <p className="text-emerald-50/90 text-sm mt-1 max-w-xl">
-            {Number(melhor.fator_emissao_co2_km) <= 0
-              ? 'Zero emissão de CO₂ neste trajeto. Melhor impossível! 🌱'
-              : `Emite ${(Number(melhor.fator_emissao_co2_km) * distancia).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} kg de CO₂`}
-            {economia > 0 && <> — economiza <strong>{economia.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} kg</strong> ante o carro.</>}
-            {!curta && ' Para esta distância, bicicleta e caminhada não entram como opção.'}
-          </p>
-        </div>
-      </div>
-    </motion.div>
   );
 }
 

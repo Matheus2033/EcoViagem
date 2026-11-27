@@ -37,6 +37,12 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(Map.of("erro", "Dados inválidos (" + campos + ")"));
     }
 
+    /** Regras de negócio validadas no service (ex.: opção de rota inviável) → 400. */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, String>> argumentoInvalido(IllegalArgumentException ex) {
+        return ResponseEntity.badRequest().body(Map.of("erro", ex.getMessage()));
+    }
+
     @ExceptionHandler(DuplicateKeyException.class)
     public ResponseEntity<Map<String, String>> duplicado(DuplicateKeyException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
@@ -51,11 +57,18 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> generico(Exception ex) {
         String msg = mensagemRaiz(ex);
-        // Rede de segurança: se a trigger de capacidade escapar como erro não categorizado.
-        if (msg.contains("Capacidade do destino")) {
+        // Regras de negócio do banco (SIGNAL SQLSTATE '45000' nas triggers) → 409 com a mensagem.
+        if (msg.contains("Capacidade do destino") || sinalDeRegra(ex)) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("erro", msg));
         }
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("erro", msg));
+    }
+
+    private boolean sinalDeRegra(Throwable ex) {
+        for (Throwable c = ex; c != null; c = c.getCause()) {
+            if (c instanceof java.sql.SQLException sql && "45000".equals(sql.getSQLState())) return true;
+        }
+        return false;
     }
 
     private String mensagemRaiz(Throwable ex) {

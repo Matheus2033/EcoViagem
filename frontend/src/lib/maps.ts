@@ -1,6 +1,6 @@
-// Integração opcional com o Google Maps. A chave vem de uma variável de build
-// (VITE_GOOGLE_MAPS_API_KEY). Sem chave, o app usa distância em linha reta
-// (haversine) entre as coordenadas dos destinos como estimativa.
+// Integração com o Google Maps (Maps JavaScript API + Places + Directions).
+// A chave vem de uma variável de build (VITE_GOOGLE_MAPS_API_KEY). Sem chave,
+// o app usa OpenStreetMap/OSRM (rota rodoviária grátis) ou linha reta.
 
 export const MAPS_KEY: string = (import.meta as any).env?.VITE_GOOGLE_MAPS_API_KEY ?? '';
 export const hasMaps = () => MAPS_KEY.trim().length > 0;
@@ -68,6 +68,41 @@ export async function coordsDoPlace(placeId: string): Promise<Coord | null> {
   } catch {
     return null;
   }
+}
+
+/* ---------------------------------------------------------------------------
+ * Google Directions (rota real) para vários modos de viagem.
+ * ------------------------------------------------------------------------- */
+
+export type ModoGoogle = 'DRIVING' | 'TRANSIT' | 'BICYCLING' | 'WALKING';
+export const MODOS_GOOGLE: { id: ModoGoogle; rotulo: string; icone: string }[] = [
+  { id: 'DRIVING', rotulo: 'Carro', icone: '🚗' },
+  { id: 'TRANSIT', rotulo: 'Transporte público', icone: '🚌' },
+  { id: 'BICYCLING', rotulo: 'Bicicleta', icone: '🚲' },
+  { id: 'WALKING', rotulo: 'A pé', icone: '🚶' },
+];
+
+export interface RotaGoogle { modo: ModoGoogle; km: number; duracao: string; segundos: number; resultado: any; }
+
+/** Pede a rota ao Google Directions para um modo; null se não houver rota. */
+export async function rotaGoogle(a: Coord, b: Coord, modo: ModoGoogle): Promise<RotaGoogle | null> {
+  const google = await loadGoogleMaps();
+  return new Promise((resolve) => {
+    new google.maps.DirectionsService().route(
+      { origin: a, destination: b, travelMode: google.maps.TravelMode[modo], region: 'BR' },
+      (res: any, status: string) => {
+        const leg = res?.routes?.[0]?.legs?.[0];
+        if (status !== 'OK' || !leg) return resolve(null);
+        resolve({ modo, km: leg.distance.value / 1000, duracao: leg.duration.text, segundos: leg.duration.value, resultado: res });
+      },
+    );
+  });
+}
+
+/** Link "abrir no Google Maps" (funciona sem chave de API). */
+export function linkGoogleMaps(a: Coord, b: Coord, modo: ModoGoogle = 'TRANSIT'): string {
+  const mode = { DRIVING: 'driving', TRANSIT: 'transit', BICYCLING: 'bicycling', WALKING: 'walking' }[modo];
+  return `https://www.google.com/maps/dir/?api=1&origin=${a.lat},${a.lng}&destination=${b.lat},${b.lng}&travelmode=${mode}`;
 }
 
 /** Distância em linha reta (km) entre duas coordenadas — fórmula de haversine. */

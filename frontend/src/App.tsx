@@ -2,7 +2,10 @@ import { useState, useEffect } from 'react';
 import { Routes, Route, NavLink, Navigate, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AuthProvider, useAuth } from './context/auth';
-import Dashboard from './pages/Dashboard';
+import Inicio from './pages/Inicio';
+import Resultados from './pages/Resultados';
+import Impacto from './pages/Impacto';
+import EcoTokens from './pages/EcoTokens';
 import Destinos from './pages/Destinos';
 import DestinoDetalhe from './pages/DestinoDetalhe';
 import Viagens from './pages/Viagens';
@@ -12,7 +15,10 @@ import Login from './pages/Login';
 import { Logo } from './components/Logo';
 
 const navItens = [
-  { to: '/', label: 'Dashboard', icon: '📊' },
+  { to: '/', label: 'Recomendações', icon: '✨' },
+  { to: '/resultados', label: 'Resultados', icon: '📊' },
+  { to: '/impacto', label: 'Dados Reais', icon: '🌍' },
+  { to: '/eco-tokens', label: 'EcoTokens', icon: '🪙' },
   { to: '/destinos', label: 'Destinos', icon: '🗺️' },
   { to: '/rotas', label: 'Planejar Rota', icon: '🧭' },
   { to: '/mobilidade', label: 'Mobilidade Verde', icon: '🚲' },
@@ -122,7 +128,10 @@ function Shell() {
       <main className="flex-1 p-4 md:p-8 lg:p-10 w-full max-w-6xl mx-auto">
         <AnimatePresence mode="wait">
           <Routes location={loc} key={loc.pathname}>
-            <Route path="/" element={<Dashboard />} />
+            <Route path="/" element={<Inicio />} />
+            <Route path="/resultados" element={<Resultados />} />
+            <Route path="/impacto" element={<Impacto />} />
+            <Route path="/eco-tokens" element={<EcoTokens />} />
             <Route path="/destinos" element={<Destinos />} />
             <Route path="/destinos/:id" element={<DestinoDetalhe />} />
             <Route path="/rotas" element={<Rotas />} />

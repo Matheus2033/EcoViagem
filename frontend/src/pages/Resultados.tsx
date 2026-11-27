@@ -6,28 +6,43 @@ import { api } from '../api';
 import { Card, PageTitle, Loader, ErroBox, Page } from '../components';
 import { fadeUp, useCountUp } from '../lib/motion';
 import { useAsync } from '../hooks/useAsync';
+import { useAuth } from '../context/auth';
 
-export default function Dashboard() {
-  // Carrega os quatro conjuntos de dados do dashboard de uma vez.
+/** Resultados: indicadores de um ambiente mais econômico e saudável. */
+export default function Resultados() {
+  const { usuario } = useAuth();
+  // Carrega os conjuntos de dados dos resultados de uma vez.
   const { data, loading, erro } = useAsync(async () => {
-    const [ind, ranking, transporte, ocupacao] = await Promise.all([
+    const [ind, ranking, transporte, ocupacao, carteira] = await Promise.all([
       api.indicadores(),
       api.rankingSustentabilidade(),
       api.transporte(),
       api.ocupacao(),
+      usuario ? api.ecoCarteira(usuario.id_usuario).catch(() => null) : Promise.resolve(null),
     ]);
-    return { ind, ranking, transporte, ocupacao };
-  });
+    return { ind, ranking, transporte, ocupacao, carteira };
+  }, [usuario?.id_usuario]);
 
   if (erro) return <Page><ErroBox msg={`Falha ao carregar: ${erro}. A API está rodando?`} /></Page>;
   if (loading || !data) return <Page><Loader linhas={4} /></Page>;
-  const { ind, ranking, transporte, ocupacao } = data;
+  const { ind, ranking, transporte, ocupacao, carteira } = data;
 
   const barColor = (v: number) => (v >= 70 ? '#059669' : v >= 45 ? '#d97706' : '#dc2626');
 
   return (
     <Page>
-      <PageTitle title="Dashboard de Sustentabilidade" subtitle="Visão geral da plataforma e indicadores ambientais" />
+      <PageTitle
+        title="Resultados: um ambiente mais econômico e saudável"
+        subtitle="Como as escolhas dos viajantes reduzem emissões, custos e a pressão sobre os destinos"
+      />
+
+      {carteira && (
+        <motion.div variants={fadeUp} className="grid grid-cols-3 gap-3 mb-4">
+          <Kpi icone="🌱" rotulo="Suas práticas sustentáveis" valor={Number(carteira.saldo.qtd_acoes)} />
+          <Kpi icone="💚" rotulo="CO₂ que você evitou" valor={Number(carteira.saldo.co2_evitado_kg)} decimais={1} sufixo=" kg" />
+          <Kpi icone="🪙" rotulo="EcoTokens ganhos" valor={Number(carteira.saldo.tokens_ganhos)} />
+        </motion.div>
+      )}
 
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-6">
