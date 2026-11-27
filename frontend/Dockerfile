@@ -11,6 +11,9 @@ RUN npm run build
 
 # ---- Serve (nginx) ----
 FROM nginx:alpine
+# nginx.conf é um TEMPLATE: ${PORT} e ${API_URL} são resolvidos por envsubst na
+# inicialização (recurso oficial da imagem: /etc/nginx/templates/*.template).
+# Assim a mesma imagem roda no docker-compose (PORT=80) e no Railway (PORT
+# injetado pela plataforma), sem precisar reconstruir.
+COPY nginx.conf /etc/nginx/templates/default.conf.template
 COPY --from=build /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-EXPOSE 80
