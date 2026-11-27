@@ -32,7 +32,7 @@ export default function Inicio() {
       {/* Hero */}
       <motion.div
         variants={fadeUp}
-        className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-800 bg-200 animate-gradient-pan text-white p-6 md:p-8 mb-6 shadow-lg shadow-emerald-800/20"
+        className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-forest via-forest to-pine bg-200 animate-gradient-pan text-white p-6 md:p-8 mb-6 shadow-lg shadow-emerald-800/20"
       >
         <div className="absolute -top-16 -right-10 w-56 h-56 rounded-full bg-white/10 blur-3xl" />
         <div className="relative flex flex-col md:flex-row md:items-end gap-5">
@@ -147,7 +147,7 @@ function Passos() {
       {PASSOS.map((p, i) => (
         <Card key={p.titulo} className="p-5">
           <div className="flex items-center gap-3 mb-2">
-            <span className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white flex items-center justify-center text-lg shadow-sm">{p.icone}</span>
+            <span className="w-9 h-9 rounded-xl bg-gradient-to-br from-forest to-pine text-white flex items-center justify-center text-lg shadow-sm">{p.icone}</span>
             <div>
               <p className="text-[11px] text-emerald-600 font-semibold uppercase tracking-wide">Passo {i + 1}</p>
               <h4 className="font-semibold text-gray-800 leading-tight">{p.titulo}</h4>

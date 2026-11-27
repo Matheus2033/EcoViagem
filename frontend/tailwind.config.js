@@ -3,6 +3,31 @@ export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Inter', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
+        display: ['"Space Grotesk"', 'Inter', 'system-ui', 'sans-serif'],
+      },
+      colors: {
+        // Paleta "Verdant": verde-pinheiro + folha/lima sobre papel quente.
+        sand: '#F5F4ED',
+        paper: '#FBFAF5',
+        ink: '#10231B',
+        canopy: '#0B241B',
+        pine: {
+          DEFAULT: '#0E3B2A',
+          600: '#124A33',
+          500: '#15603F',
+        },
+        forest: '#15754E',
+        leaf: '#6FAE2F',
+        sprout: '#8BD34A',
+        clay: '#C2410C',
+      },
+      boxShadow: {
+        soft: '0 2px 16px -12px rgba(16,42,32,0.35)',
+        lift: '0 18px 40px -20px rgba(16,42,32,0.32)',
+        glow: '0 10px 26px -14px rgba(14,59,42,0.7)',
+      },
       keyframes: {
         float: {
           '0%,100%': { transform: 'translateY(0)' },

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -17,23 +17,30 @@ html {
   scroll-behavior: smooth;
   /* Scrollbar discreta no Firefox (que ignora ::-webkit-scrollbar) */
   scrollbar-width: thin;
-  scrollbar-color: #cfd6ce transparent;
+  scrollbar-color: #d4cfc1 transparent;
 }
 
 body {
   margin: 0;
-  font-family: 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  /* fundo com leve gradiente/mancha verde para dar profundidade */
-  background-color: #eef1ec;
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  /* Papel quente com leve mancha verde em camadas, para dar profundidade. */
+  background-color: #f5f4ed;
   background-image:
-    radial-gradient(1100px 600px at 110% -10%, rgba(16, 185, 129, 0.10), transparent 60%),
-    radial-gradient(900px 500px at -10% 10%, rgba(13, 148, 136, 0.08), transparent 55%);
+    radial-gradient(1100px 600px at 108% -8%, rgba(21, 117, 78, 0.10), transparent 60%),
+    radial-gradient(880px 520px at -8% 4%, rgba(14, 59, 42, 0.07), transparent 55%),
+    radial-gradient(700px 500px at 60% 120%, rgba(111, 174, 47, 0.06), transparent 60%);
   background-attachment: fixed;
-  color: #16281f;
+  color: #10231b;
+}
+
+/* Títulos com a display (Space Grotesk) e tracking levemente fechado. */
+h1, h2, h3 {
+  font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+  letter-spacing: -0.02em;
 }
 
 ::selection {
-  background: #10b981;
+  background: #15754e;
   color: #fff;
 }
 
@@ -43,15 +50,15 @@ body {
   100% { background-position: 468px 0; }
 }
 .skeleton {
-  background: linear-gradient(90deg, #e9ece7 25%, #f3f5f1 50%, #e9ece7 75%);
+  background: linear-gradient(90deg, #e9ece4 25%, #f4f6ee 50%, #e9ece4 75%);
   background-size: 936px 100%;
   animation: shimmer 1.4s infinite linear;
 }
 
 /* Scrollbar discreta */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-thumb { background: #cfd6ce; border-radius: 8px; border: 2px solid transparent; background-clip: content-box; }
-::-webkit-scrollbar-thumb:hover { background: #b6c0b5; background-clip: content-box; }
+::-webkit-scrollbar-thumb { background: #d4cfc1; border-radius: 8px; border: 2px solid transparent; background-clip: content-box; }
+::-webkit-scrollbar-thumb:hover { background: #bcb6a6; background-clip: content-box; }
 
 /* Respeita quem prefere menos movimento */
 @media (prefers-reduced-motion: reduce) {

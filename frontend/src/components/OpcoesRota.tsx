@@ -127,7 +127,7 @@ export function OpcoesRota({
     <section className="mt-4">
       {/* Resumo da economia */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-700 text-white p-5 md:p-6 shadow-lg shadow-emerald-700/20">
+        className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-forest via-forest to-pine text-white p-5 md:p-6 shadow-lg shadow-emerald-700/20">
         <div className="absolute -top-10 -right-6 w-40 h-40 rounded-full bg-white/10 blur-2xl" />
         <div className="relative flex flex-col md:flex-row md:items-center gap-4">
           <div className="text-5xl shrink-0">{rec.icone}</div>

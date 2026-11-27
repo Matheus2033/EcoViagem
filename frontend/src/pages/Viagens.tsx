@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { api, Viagem, Destino, TipoTransporte } from '../api';
 import { useAuth } from '../context/auth';
 import { PageTitle, Loader, ErroBox, StatusBadge, Page } from '../components';
+import { Icon } from '../components/icons';
 import { fadeUp, stagger } from '../lib/motion';
 import { buscarSugestoesOSM, rotaRodoviariaKm, haversineKm } from '../lib/maps';
 
@@ -48,9 +49,9 @@ export default function Viagens() {
         <motion.button
           whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.96 }}
           onClick={() => setAbrirForm(true)}
-          className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap shadow-sm transition"
+          className="inline-flex items-center gap-2 bg-pine hover:bg-pine-600 text-white px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap shadow-glow transition"
         >
-          + Nova viagem
+          <Icon name="plus" size={16} className="text-sprout" /> Nova viagem
         </motion.button>
       </div>
 
@@ -93,23 +94,28 @@ export default function Viagens() {
         <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-3">
           {viagens.map((v) => (
             <motion.div key={v.id_viagem} variants={fadeUp} whileHover={{ x: 3 }}
-              className="bg-white/90 backdrop-blur rounded-2xl border border-black/5 shadow-[0_2px_14px_-8px_rgba(16,40,31,0.25)] p-5 flex flex-wrap justify-between items-center gap-3">
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="font-semibold text-gray-900">{v.destino} · {v.estado}</h3>
-                  <StatusBadge status={v.status} />
+              className="bg-white/90 backdrop-blur rounded-2xl border border-ink/[0.07] shadow-soft p-5 flex flex-wrap justify-between items-center gap-3">
+              <div className="flex items-center gap-4 min-w-0">
+                <span className="w-11 h-11 rounded-xl bg-leaf/10 text-forest flex items-center justify-center shrink-0">
+                  <Icon name="map-pin" size={20} />
+                </span>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="font-display font-semibold text-ink">{v.destino} · {v.estado}</h3>
+                    <StatusBadge status={v.status} />
+                  </div>
+                  <p className="text-sm text-pine/55">
+                    {fmt(v.data_inicio)} → {fmt(v.data_fim)} · {v.num_pessoas} pessoa(s)
+                    {v.hospedagem && ` · ${v.hospedagem}`}
+                    {v.valor_total != null && ` (R$ ${Number(v.valor_total).toLocaleString('pt-BR')})`}
+                  </p>
                 </div>
-                <p className="text-sm text-gray-500">
-                  {fmt(v.data_inicio)} → {fmt(v.data_fim)} · {v.num_pessoas} pessoa(s)
-                  {v.hospedagem && ` · 🏨 ${v.hospedagem}`}
-                  {v.valor_total != null && ` (R$ ${Number(v.valor_total).toLocaleString('pt-BR')})`}
-                </p>
               </div>
               <div className="text-right">
-                <p className="text-lg font-bold text-gray-900">
-                  {Number(v.emissao_total_kg ?? 0).toLocaleString('pt-BR')} <span className="text-sm font-normal text-gray-400">kg CO₂</span>
+                <p className="font-display text-lg font-bold text-ink tabular-nums">
+                  {Number(v.emissao_total_kg ?? 0).toLocaleString('pt-BR')} <span className="text-sm font-normal text-pine/40">kg CO₂</span>
                 </p>
-                <p className="text-xs text-gray-400">{Number(v.emissao_por_pessoa_kg ?? 0).toFixed(1)} kg/pessoa</p>
+                <p className="text-xs text-pine/40">{Number(v.emissao_por_pessoa_kg ?? 0).toFixed(1)} kg/pessoa</p>
               </div>
             </motion.div>
           ))}
@@ -185,11 +191,11 @@ function NovaViagem({ destinos, tipos, onCriada, onFechar }: { destinos: Destino
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-emerald-200 shadow-2xl p-5">
+    <div className="bg-white rounded-2xl border border-leaf/30 shadow-2xl p-5">
       <div className="flex items-start justify-between mb-4">
         <div>
-          <h3 className="font-semibold text-gray-800 text-lg">Planejar nova viagem</h3>
-          <p className="text-xs text-gray-500">Escolha o destino e os detalhes da sua viagem</p>
+          <h3 className="font-display font-semibold text-ink text-lg">Planejar nova viagem</h3>
+          <p className="text-xs text-pine/50">Escolha o destino e os detalhes da sua viagem</p>
         </div>
         <button type="button" onClick={onFechar} aria-label="Fechar"
           className="shrink-0 w-8 h-8 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 flex items-center justify-center text-xl leading-none transition">×</button>
@@ -205,14 +211,14 @@ function NovaViagem({ destinos, tipos, onCriada, onFechar }: { destinos: Destino
               return (
                 <button type="button" key={d.id_destino}
                   onClick={() => setForm({ ...form, id_destino: String(d.id_destino) })}
-                  className={`text-left rounded-xl border p-3 transition ${sel ? 'border-emerald-500 bg-emerald-50 ring-1 ring-emerald-500' : 'border-gray-200 hover:border-emerald-300 hover:bg-gray-50'}`}
+                  className={`text-left rounded-xl border p-3 transition ${sel ? 'border-forest bg-leaf/[0.08] ring-1 ring-forest' : 'border-ink/[0.08] hover:border-leaf/50 hover:bg-leaf/[0.04]'}`}
                 >
-                  <div className="text-sm font-semibold text-gray-800 flex items-center gap-1">
-                    <span>{sel ? '✅' : '🌿'}</span>
+                  <div className="text-sm font-semibold text-ink flex items-center gap-1.5">
+                    <Icon name={sel ? 'check' : 'leaf'} size={15} className={sel ? 'text-forest' : 'text-leaf'} />
                     <span className="line-clamp-1">{d.nome}</span>
                   </div>
-                  <div className="text-xs text-gray-500 line-clamp-1">{d.cidade}/{d.estado}</div>
-                  {d.categoria && <div className="text-[11px] text-emerald-700 mt-0.5 line-clamp-1">{d.categoria}</div>}
+                  <div className="text-xs text-pine/50 line-clamp-1">{d.cidade}/{d.estado}</div>
+                  {d.categoria && <div className="text-[11px] text-forest mt-0.5 line-clamp-1">{d.categoria}</div>}
                 </button>
               );
             })}
@@ -240,10 +246,10 @@ function NovaViagem({ destinos, tipos, onCriada, onFechar }: { destinos: Destino
         </div>
 
         {/* Calculadora de pegada */}
-        <div className="bg-gray-50 rounded-lg p-4">
+        <div className="bg-sand/70 rounded-xl p-4 border border-ink/[0.05]">
           <div className="flex justify-between items-center mb-2">
-            <span className="text-sm font-medium text-gray-700">🧮 Trechos de transporte</span>
-            <button type="button" onClick={addTrecho} className="text-emerald-700 text-sm hover:underline">+ adicionar trecho</button>
+            <span className="text-sm font-medium text-ink/80 flex items-center gap-1.5"><Icon name="calc" size={16} className="text-forest" /> Trechos de transporte</span>
+            <button type="button" onClick={addTrecho} className="text-forest text-sm font-medium hover:underline">+ adicionar trecho</button>
           </div>
           <AnimatePresence initial={false}>
             {trechos.map((t, i) => (
@@ -263,21 +269,21 @@ function NovaViagem({ destinos, tipos, onCriada, onFechar }: { destinos: Destino
                     className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm w-full min-w-0" />
                   <button type="button" onClick={() => calcularKm(i)} disabled={calcKm === i}
                     title="Calcular a distância real por estrada (OpenStreetMap/OSRM)"
-                    className="shrink-0 px-2 rounded-lg border border-emerald-300 text-emerald-700 text-xs hover:bg-emerald-50 disabled:opacity-60">
-                    {calcKm === i ? '…' : '🧭 km'}
+                    className="shrink-0 inline-flex items-center gap-1 px-2.5 rounded-lg border border-forest/40 text-forest text-xs hover:bg-leaf/[0.08] disabled:opacity-60">
+                    {calcKm === i ? '…' : <><Icon name="compass" size={13} /> km</>}
                   </button>
                 </div>
               </motion.div>
             ))}
           </AnimatePresence>
           {trechos.length === 0 && <p className="text-xs text-gray-400">Adicione trechos para estimar a pegada de carbono.</p>}
-          {trechos.length > 0 && <p className="text-xs text-gray-400 mb-1">Dica: preencha origem e destino e clique em <strong>🧭 km</strong> para calcular a distância real por estrada.</p>}
+          {trechos.length > 0 && <p className="text-xs text-pine/50 mb-1">Dica: preencha origem e destino e clique em <strong>km</strong> para calcular a distância real por estrada.</p>}
           {trechos.length > 0 && (
-            <motion.p layout className="text-sm mt-2">
+            <motion.p layout className="text-sm mt-2 text-ink/80">
               Estimativa de emissão:{' '}
-              <motion.span key={estimativa.toFixed(1)} initial={{ scale: 1.15, color: '#10b981' }} animate={{ scale: 1, color: '#047857' }}
-                className="font-bold inline-block">{estimativa.toFixed(1)} kg CO₂</motion.span>
-              <span className="text-xs text-gray-400"> (cálculo oficial feito por trigger no banco)</span>
+              <motion.span key={estimativa.toFixed(1)} initial={{ scale: 1.15, color: '#6FAE2F' }} animate={{ scale: 1, color: '#15754E' }}
+                className="font-bold font-display inline-block tabular-nums">{estimativa.toFixed(1)} kg CO₂</motion.span>
+              <span className="text-xs text-pine/40"> (cálculo oficial feito por trigger no banco)</span>
             </motion.p>
           )}
         </div>
@@ -288,7 +294,7 @@ function NovaViagem({ destinos, tipos, onCriada, onFechar }: { destinos: Destino
             Cancelar
           </button>
           <motion.button disabled={enviando} whileHover={{ scale: enviando ? 1 : 1.03 }} whileTap={{ scale: 0.96 }}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-xl text-sm font-medium disabled:opacity-60 transition">
+            className="bg-pine hover:bg-pine-600 text-white px-5 py-2 rounded-xl text-sm font-medium disabled:opacity-60 transition shadow-glow">
             {enviando ? 'Salvando...' : 'Registrar viagem'}
           </motion.button>
         </div>

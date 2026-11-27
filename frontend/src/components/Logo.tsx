@@ -36,9 +36,9 @@ export function LogoMark({
     >
       <defs>
         <linearGradient id="eco-badge" x1="4" y1="2" x2="44" y2="46" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#34d399" />
-          <stop offset="0.55" stopColor="#10b981" />
-          <stop offset="1" stopColor="#0d9488" />
+          <stop stopColor="#2BAE72" />
+          <stop offset="0.55" stopColor="#15754E" />
+          <stop offset="1" stopColor="#0E3B2A" />
         </linearGradient>
         <linearGradient id="eco-shine" x1="6" y1="4" x2="30" y2="30" gradientUnits="userSpaceOnUse">
           <stop stopColor="#ffffff" stopOpacity="0.45" />
@@ -83,17 +83,17 @@ export function Logo({
   variant?: 'light' | 'dark';
   animated?: boolean;
 }) {
-  const nome = variant === 'light' ? 'text-white' : 'text-gray-900';
-  const sub = variant === 'light' ? 'text-emerald-100/80' : 'text-emerald-600/80';
+  const nome = variant === 'light' ? 'text-white' : 'text-ink';
+  const sub = variant === 'light' ? 'text-emerald-100/80' : 'text-forest/70';
   const grad =
     variant === 'light'
-      ? 'from-lime-300 to-emerald-300'
-      : 'from-emerald-500 via-emerald-600 to-teal-600';
+      ? 'from-sprout to-emerald-200'
+      : 'from-leaf via-forest to-pine';
   return (
     <div className="flex items-center gap-2.5">
       <LogoMark size={size} animated={animated} className="drop-shadow-md shrink-0" />
       <div className="leading-tight">
-        <h1 className={`font-extrabold text-lg tracking-tight ${nome}`}>
+        <h1 className={`font-display font-bold text-lg tracking-tight ${nome}`}>
           Eco<span className={`bg-gradient-to-r ${grad} bg-clip-text text-transparent`}>Viagem</span>
         </h1>
         <p className={`text-[11px] font-medium ${sub}`}>Turismo Sustentável</p>

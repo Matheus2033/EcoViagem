@@ -68,10 +68,10 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-emerald-500 via-emerald-700 to-teal-900 bg-200 animate-gradient-pan p-4 relative overflow-hidden">
-      <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-emerald-400/25 blur-3xl animate-float-slow" />
-      <div className="absolute -bottom-24 -left-24 w-96 h-96 rounded-full bg-teal-300/20 blur-3xl animate-float" />
-      <div className="absolute top-1/3 left-8 w-40 h-40 rounded-full bg-lime-300/10 blur-2xl animate-float-slow" />
+    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-forest via-pine to-canopy bg-200 animate-gradient-pan p-4 relative overflow-hidden">
+      <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-sprout/20 blur-3xl animate-float-slow" />
+      <div className="absolute -bottom-24 -left-24 w-96 h-96 rounded-full bg-leaf/15 blur-3xl animate-float" />
+      <div className="absolute top-1/3 left-8 w-40 h-40 rounded-full bg-sprout/10 blur-2xl animate-float-slow" />
 
       <motion.div
         initial={{ opacity: 0, y: 24, scale: 0.97 }}
@@ -86,14 +86,14 @@ export default function Login() {
             transition={{ type: 'spring', stiffness: 260, damping: 16, delay: 0.1 }}
             className="relative mb-3"
           >
-            <span className="absolute inset-0 rounded-[1.1rem] bg-emerald-400/40 blur-lg animate-pulse-ring" />
+            <span className="absolute inset-0 rounded-[1.1rem] bg-forest/40 blur-lg animate-pulse-ring" />
             <LogoMark size={64} className="relative" />
           </motion.div>
-          <h1 className="text-3xl font-extrabold tracking-tight">
-            <span className="text-gray-900">Eco</span>
-            <span className="bg-gradient-to-r from-emerald-500 via-emerald-600 to-teal-600 bg-clip-text text-transparent">Viagem</span>
+          <h1 className="font-display text-3xl font-bold tracking-tight">
+            <span className="text-ink">Eco</span>
+            <span className="bg-gradient-to-r from-leaf via-forest to-pine bg-clip-text text-transparent">Viagem</span>
           </h1>
-          <p className="text-gray-500 text-sm mt-0.5">Plataforma de Turismo Sustentável</p>
+          <p className="text-pine/50 text-sm mt-0.5">Plataforma de Turismo Sustentável</p>
         </div>
 
         {info && (
@@ -112,7 +112,7 @@ export default function Login() {
                     key={m}
                     onClick={() => { setModo(m); limpar(); }}
                     className={`flex-1 py-2 rounded-md text-sm font-medium capitalize transition ${
-                      modo === m ? 'bg-white shadow text-emerald-700' : 'text-gray-500'
+                      modo === m ? 'bg-white shadow text-forest' : 'text-pine/50'
                     }`}
                   >
                     {m === 'login' ? 'Entrar' : 'Cadastrar'}
@@ -127,7 +127,7 @@ export default function Login() {
                 {modo === 'login' && (
                   <div className="text-right -mt-1">
                     <button type="button" onClick={() => { limpar(); setStep('forgot'); }}
-                      className="text-xs text-emerald-700 hover:text-emerald-900 font-medium">
+                      className="text-xs text-forest hover:text-pine font-medium">
                       Esqueci minha senha
                     </button>
                   </div>
@@ -231,10 +231,10 @@ function DemoBanner({ codigo }: { codigo: string }) {
 function Input({ label, ...props }: any) {
   return (
     <label className="block">
-      <span className="text-sm font-medium text-gray-700">{label}</span>
+      <span className="text-sm font-medium text-ink/80">{label}</span>
       <input
         {...props}
-        className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+        className="mt-1 w-full border border-ink/[0.12] rounded-lg px-3 py-2 focus:ring-2 focus:ring-forest/40 focus:border-forest outline-none transition"
       />
     </label>
   );
@@ -248,7 +248,7 @@ function CodeInput({ value, onChange }: { value: string; onChange: (v: string) =
       inputMode="numeric"
       placeholder="000000"
       required
-      className="w-full border border-gray-300 rounded-lg px-3 py-3 text-center text-2xl font-mono tracking-[0.5em] focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+      className="w-full border border-ink/[0.12] rounded-lg px-3 py-3 text-center text-2xl font-mono tracking-[0.5em] focus:ring-2 focus:ring-forest/40 focus:border-forest outline-none"
     />
   );
 }
@@ -258,7 +258,7 @@ function Primario({ loading, texto }: { loading: boolean; texto: string }) {
     <motion.button
       disabled={loading}
       whileHover={{ scale: loading ? 1 : 1.02 }} whileTap={{ scale: 0.97 }}
-      className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-semibold py-2.5 rounded-xl transition disabled:opacity-60 shadow-md shadow-emerald-600/20"
+      className="w-full bg-gradient-to-r from-forest to-pine hover:from-pine-500 hover:to-pine text-white font-semibold py-2.5 rounded-xl transition disabled:opacity-60 shadow-glow"
     >
       {loading ? '...' : texto}
     </motion.button>

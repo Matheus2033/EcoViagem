@@ -120,7 +120,7 @@ function Carteira({ saldo, ganhos, acoes, co2 }: { saldo: number; ganhos: number
   const pct = proximoNivel === ganhos ? 100 : (ganhos / proximoNivel) * 100;
   return (
     <motion.div variants={fadeUp}
-      className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-amber-400 via-emerald-500 to-teal-700 text-white p-6 shadow-lg shadow-emerald-800/20">
+      className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-amber-400 via-emerald-500 to-pine text-white p-6 shadow-lg shadow-emerald-800/20">
       <div className="absolute -bottom-10 -right-10 w-48 h-48 rounded-full bg-white/10 blur-2xl" />
       <div className="relative grid sm:grid-cols-4 gap-4 items-center">
         <div className="sm:col-span-2">
