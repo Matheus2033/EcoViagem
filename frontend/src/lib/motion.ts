@@ -2,27 +2,30 @@
 import { useEffect, useState } from 'react';
 import { animate, type Variants } from 'framer-motion';
 
-/** Entrada suave de baixo para cima. */
+/** Entrada suave de baixo para cima (leve, para não pesar no mobile). */
 export const fadeUp: Variants = {
-  hidden: { opacity: 0, y: 16 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] } },
+  hidden: { opacity: 0, y: 10 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.28, ease: [0.22, 1, 0.36, 1] } },
 };
 
-/** Container que revela os filhos em cascata (stagger). */
+/** Container que revela os filhos em cascata (stagger curto). */
 export const stagger: Variants = {
   hidden: {},
-  show: { transition: { staggerChildren: 0.07, delayChildren: 0.05 } },
+  show: { transition: { staggerChildren: 0.035, delayChildren: 0.02 } },
 };
 
-/** Transição de página que também revela os filhos (com variante fadeUp) em cascata. */
+/**
+ * Transição de página leve: cascata curta e saída rápida, pra troca de tela
+ * não engasgar (principalmente em celulares mais simples).
+ */
 export const pageTransition: Variants = {
-  hidden: { opacity: 0, y: 12 },
+  hidden: { opacity: 0, y: 8 },
   show: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.35, ease: 'easeOut', staggerChildren: 0.07, delayChildren: 0.06 },
+    transition: { duration: 0.26, ease: 'easeOut', staggerChildren: 0.035, delayChildren: 0.02 },
   },
-  exit: { opacity: 0, y: -8, transition: { duration: 0.2 } },
+  exit: { opacity: 0, transition: { duration: 0.12 } },
 };
 
 /** Pop de hover/tap para cards e botões. */

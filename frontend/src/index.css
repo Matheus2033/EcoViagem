@@ -60,6 +60,24 @@ h1, h2, h3 {
 ::-webkit-scrollbar-thumb { background: #d4cfc1; border-radius: 8px; border: 2px solid transparent; background-clip: content-box; }
 ::-webkit-scrollbar-thumb:hover { background: #bcb6a6; background-clip: content-box; }
 
+/* Performance no mobile: os efeitos mais caros pra GPU de celular são o blur de
+   fundo (backdrop-filter) e o fundo fixo (background-attachment: fixed, que
+   repinta a cada rolagem). Desligamos os dois no mobile — o visual quase não
+   muda, mas a navegação deixa de engasgar. */
+@media (max-width: 768px) {
+  body {
+    background-attachment: scroll;
+  }
+  .backdrop-blur,
+  .backdrop-blur-sm,
+  .backdrop-blur-md,
+  .backdrop-blur-lg,
+  .backdrop-blur-xl {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+}
+
 /* Respeita quem prefere menos movimento */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
