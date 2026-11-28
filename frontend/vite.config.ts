@@ -10,6 +10,20 @@ export default defineConfig({
     // Transpila o JS para rodar em navegadores mais antigos também (além dos
     // atuais de Chrome, Edge, Firefox, Safari e Brave).
     target: ['chrome87', 'edge88', 'firefox78', 'safari13'],
+    chunkSizeWarningLimit: 900,
+    rollupOptions: {
+      output: {
+        // Separa as bibliotecas pesadas em "pedaços" próprios, que ficam em
+        // cache do navegador e só são baixados quando a tela que os usa abre
+        // (ex.: os gráficos só carregam no Dashboard/Impacto). Deixa o
+        // carregamento inicial bem mais leve, principalmente no celular.
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          charts: ['recharts'],
+          motion: ['framer-motion'],
+        },
+      },
+    },
   },
   server: {
     port: 5173,

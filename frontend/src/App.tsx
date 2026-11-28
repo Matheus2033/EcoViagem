@@ -1,19 +1,23 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { Routes, Route, NavLink, Navigate, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AuthProvider, useAuth } from './context/auth';
-import Inicio from './pages/Inicio';
-import Resultados from './pages/Resultados';
-import Impacto from './pages/Impacto';
-import EcoTokens from './pages/EcoTokens';
-import Destinos from './pages/Destinos';
-import DestinoDetalhe from './pages/DestinoDetalhe';
-import Viagens from './pages/Viagens';
-import Mobilidade from './pages/Mobilidade';
-import Rotas from './pages/Rotas';
 import Login from './pages/Login';
 import { Logo } from './components/Logo';
 import { Icon, type IconName } from './components/icons';
+
+// Telas carregadas sob demanda (code-splitting): cada uma vira um "pedaço"
+// separado, baixado só quando o usuário abre aquela rota. Deixa o primeiro
+// carregamento bem mais leve — importante no celular.
+const Inicio = lazy(() => import('./pages/Inicio'));
+const Resultados = lazy(() => import('./pages/Resultados'));
+const Impacto = lazy(() => import('./pages/Impacto'));
+const EcoTokens = lazy(() => import('./pages/EcoTokens'));
+const Destinos = lazy(() => import('./pages/Destinos'));
+const DestinoDetalhe = lazy(() => import('./pages/DestinoDetalhe'));
+const Viagens = lazy(() => import('./pages/Viagens'));
+const Mobilidade = lazy(() => import('./pages/Mobilidade'));
+const Rotas = lazy(() => import('./pages/Rotas'));
 
 const navItens: { to: string; label: string; icon: IconName }[] = [
   { to: '/', label: 'Recomendações', icon: 'sparkles' },
@@ -76,6 +80,17 @@ function UserFooter() {
           <Icon name="logout" size={17} />
         </button>
       </div>
+    </div>
+  );
+}
+
+/** Placeholder leve enquanto o "pedaço" da tela baixa. */
+function RouteFallback() {
+  return (
+    <div className="w-full max-w-6xl mx-auto space-y-4">
+      <div className="skeleton h-9 w-72 rounded-lg" />
+      <div className="skeleton h-40 w-full rounded-2xl" />
+      <div className="skeleton h-40 w-full rounded-2xl" />
     </div>
   );
 }
@@ -169,20 +184,22 @@ function Shell() {
 
         {/* Conteúdo */}
         <main className="p-4 md:p-8 lg:p-10 w-full max-w-6xl mx-auto">
-          <AnimatePresence mode="wait">
-            <Routes location={loc} key={loc.pathname}>
-              <Route path="/" element={<Inicio />} />
-              <Route path="/resultados" element={<Resultados />} />
-              <Route path="/impacto" element={<Impacto />} />
-              <Route path="/eco-tokens" element={<EcoTokens />} />
-              <Route path="/destinos" element={<Destinos />} />
-              <Route path="/destinos/:id" element={<DestinoDetalhe />} />
-              <Route path="/rotas" element={<Rotas />} />
-              <Route path="/mobilidade" element={<Mobilidade />} />
-              <Route path="/viagens" element={<Viagens />} />
-              <Route path="*" element={<Navigate to="/" />} />
-            </Routes>
-          </AnimatePresence>
+          <Suspense fallback={<RouteFallback />}>
+            <AnimatePresence mode="wait">
+              <Routes location={loc} key={loc.pathname}>
+                <Route path="/" element={<Inicio />} />
+                <Route path="/resultados" element={<Resultados />} />
+                <Route path="/impacto" element={<Impacto />} />
+                <Route path="/eco-tokens" element={<EcoTokens />} />
+                <Route path="/destinos" element={<Destinos />} />
+                <Route path="/destinos/:id" element={<DestinoDetalhe />} />
+                <Route path="/rotas" element={<Rotas />} />
+                <Route path="/mobilidade" element={<Mobilidade />} />
+                <Route path="/viagens" element={<Viagens />} />
+                <Route path="*" element={<Navigate to="/" />} />
+              </Routes>
+            </AnimatePresence>
+          </Suspense>
         </main>
       </div>
     </div>
